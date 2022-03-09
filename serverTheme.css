@@ -1,0 +1,7 @@
+.root {
+        -fx-accent: #373e43;
+        -fx-focus-color: -fx-accent;
+        -fx-base: #0C6950;
+        -fx-control-inner-background: derive(-fx-base, 35%);
+        -fx-control-inner-background-alt: -fx-control-inner-background ;
+}

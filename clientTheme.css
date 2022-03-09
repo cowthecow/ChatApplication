@@ -1,0 +1,30 @@
+.root {
+    -fx-accent: #32695B;
+    -fx-focus-color: -fx-accent;
+    -fx-base: #E5E4E5;
+    -fx-control-inner-background: derive(-fx-base, 35%);
+    -fx-control-inner-background-alt: -fx-control-inner-background ;
+}
+
+
+#enterButton, #username{
+.root {
+    -fx-accent: #E5E4E5;
+    -fx-focus-color: -fx-accent;
+    -fx-base: #32695B;
+    -fx-control-inner-background: derive(-fx-base, 35%);
+    -fx-control-inner-background-alt: -fx-control-inner-background ;
+}
+}
+
+.button{
+    -fx-focus-traversable: false;
+}
+
+.button:hover{
+    -fx-text-fill: white;
+}
+
+.label{
+    -fx-text-fill: black
+}
