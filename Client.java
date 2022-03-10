@@ -31,7 +31,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.ResourceBundle;
-import java.util.Scanner;
 
 public class Client extends Application implements Initializable {
 
@@ -49,6 +48,8 @@ public class Client extends Application implements Initializable {
     private static String clientUsername;
 
     private static Object susLock = new Object();
+    private static boolean usernameFetched;
+    private static boolean uninitialized = true;
 
     @FXML
     ScrollPane scrollPane;
@@ -62,44 +63,15 @@ public class Client extends Application implements Initializable {
     @FXML
     Label displayedUsername;
 
+    @FXML
+    TextField usernameGrabber;
+
     @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        displayedUsername.setText(clientUsername);
+    public synchronized void initialize(URL location, ResourceBundle resources) {
 
-        messages.heightProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                scrollPane.setVvalue((Double) newValue);
-            }
-        });
-
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                if(children.size() > 0) messages.getChildren().add(children.get(0));
-            }
-        });
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for(;;) {
-                    try {
-                        Robot sus = new Robot();
-                        sus.keyRelease(java.awt.event.KeyEvent.VK_E);
-                        Thread.sleep(200);
-                    }catch (AWTException | InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
     }
 
     public synchronized void startClient(Socket socket) {
-        Scanner sus = new Scanner(System.in);
-        clientUsername = sus.nextLine();
-
         try {
             this.socket = socket;
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -109,14 +81,76 @@ public class Client extends Application implements Initializable {
         }
     }
 
+
+    @FXML
+    public void startGUI() throws IOException {
+        usernameFetched = false;
+        clientUsername = usernameGrabber.getText();
+
+        Stage stage;
+        stage = (Stage) (usernameGrabber).getScene().getWindow();
+
+        Parent root = FXMLLoader.load(getClass().getResource("client.fxml"));
+        stage.setResizable(false);
+        stage.setTitle("Client GUI");
+        stage.setScene(new Scene(root, 400, 575));
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Robot sus = null;
+                try {
+                    sus = new Robot();
+                    sus.keyRelease(java.awt.event.KeyEvent.VK_E);
+                } catch (AWTException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
+    }
+
     @FXML
     public void onMouseMoved() {
         System.out.println("updating..");
-        if(unreadMessages.size() > 0) {
-            while(unreadMessages.size() > 0) {
+        if (unreadMessages.size() > 0) {
+            while (unreadMessages.size() > 0) {
                 receiveMessageGUI(unreadMessages.get(0));
                 unreadMessages.remove(0);
             }
+        }
+        if (uninitialized) {
+            displayedUsername.setText(clientUsername);
+
+            messages.heightProperty().addListener(new ChangeListener<Number>() {
+                @Override
+                public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                    scrollPane.setVvalue((Double) newValue);
+                }
+            });
+
+            Platform.runLater(new Runnable() {
+                @Override
+                public void run() {
+                    if (children.size() > 0) messages.getChildren().add(children.get(0));
+                }
+            });
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    for (; ; ) {
+                        try {
+                            Robot sus = new Robot();
+                            sus.keyRelease(java.awt.event.KeyEvent.VK_E);
+                            Thread.sleep(200);
+                        } catch (AWTException | InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }).start();
+            uninitialized = false;
         }
     }
 
@@ -145,6 +179,9 @@ public class Client extends Application implements Initializable {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                while (!usernameFetched) {
+                    //Pause the thread
+                }
                 try {
                     bufferedWriter.write(clientUsername);
                     bufferedWriter.newLine();
@@ -229,7 +266,7 @@ public class Client extends Application implements Initializable {
     public void receiveMessageGUI(String received) {
         int firstColon = received.indexOf(':');
         String user = received.substring(0, firstColon);
-        String message = received.substring(firstColon+1);
+        String message = received.substring(firstColon + 1);
 
         HBox textBox = new HBox(5);
         textBox.setAlignment(Pos.CENTER_LEFT);
@@ -276,10 +313,12 @@ public class Client extends Application implements Initializable {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("client.fxml"));
-        primaryStage.setTitle("Client GUI");
-        primaryStage.setScene(new Scene(root, 400, 575));
+        Parent root = FXMLLoader.load(getClass().getResource("username.fxml"));
+        primaryStage.setTitle("Enter your nickname:");
+        primaryStage.setScene(new Scene(root, 400, 100));
         primaryStage.show();
+
+        //Usual dimensions (400,575)
     }
 
     public static void main(String[] args) throws IOException {
@@ -291,7 +330,6 @@ public class Client extends Application implements Initializable {
         client.listenForMessages();
         client.sendMessages();
 
-        System.out.println("launching bitches");
         launch(args);
     }
 
